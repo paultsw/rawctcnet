@@ -143,7 +143,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
         def convert_to_string(toks, voc, num):
             return ''.join([voc[t] for t in toks[0:num]])
         for true_seqs, transcriptions in base_seqs:
-            true_nts = labels2strings(true<seqs, lookup=_nt_dict_)
+            true_nts = labels2strings(true_seqs, lookup=_nt_dict_)
             reshaped_trans = transcriptions.permute(1,0,2) # (TxBxD => BxTxD)
             beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(reshaped_trans.data)
             pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
