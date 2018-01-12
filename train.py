@@ -36,8 +36,12 @@ def main(cfg, cuda=torch.cuda.is_available()):
         # choose between train/valid data based on `mode`:
         if mode == 'train':
             datasets = cfg['train_data_paths']
+            pin_memory_flag = cuda
+            num_workers_setting = 4
         if mode == 'valid':
             datasets = cfg['valid_data_paths']
+            pin_memory_flag = False
+            num_workers_setting = 1
 
         # form a (possibly concatenated) dataset:
         ds = SeqTensorDataset(torch.load(datasets[0][0]), torch.load(datasets[0][1]), torch.load(datasets[0][2]))
@@ -45,14 +49,17 @@ def main(cfg, cuda=torch.cuda.is_available()):
             ds += SeqTensorDataset(torch.load(dataset[0]), torch.load(dataset[1]), torch.load(dataset[2]))
 
         # return a loader that iterates over the dataset of choice; pagelock the memory location if GPU detected:
-        return DataLoader(ds, batch_size=cfg['batch_size'], shuffle=True,
-                          num_workers=4, collate_fn=sequence_collate_fn, pin_memory=cuda)
+        return DataLoader(ds, batch_size=cfg['batch_size'],
+                          shuffle=True,
+                          num_workers=num_workers_setting,
+                          collate_fn=sequence_collate_fn,
+                          pin_memory=pin_memory_flag)
 
     ### build RawCTCNet model:
     in_dim = 1
-    layers = [ (512,512,d,3) for d in [1,2,4,8,16,32,64] ] * cfg['num_stacks']
+    layers = [ (256,256,d,3) for d in [1,2,4,8,16,32,64] ] * cfg['num_stacks']
     num_labels = 5
-    out_dim = 1024
+    out_dim = 512
     network = RawCTCNet(in_dim, num_labels, layers, out_dim, input_kw=1, input_dil=1,
                         positions=True, softmax=False, causal=False)
     print("Constructed network.")
