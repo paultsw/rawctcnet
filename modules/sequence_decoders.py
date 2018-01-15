@@ -18,8 +18,8 @@ def argmax_decode(logits):
     * labels: a LongTensor of shape (batch, sequence), where each entry is the integer labeling of
     the logit, based on the argmaxed coordinate.
     """
-    if isinstance(labels, torch.autograd.Variable): logits = logits.data
-    labels = logits.new(logits.size(0), logits.size(1))
+    if isinstance(logits, torch.autograd.Variable): logits = logits.data
+    #labels = logits.new(logits.size(0), logits.size(1))
     _, labels = torch.max(logits, dim=2)
     return labels
 
