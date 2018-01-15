@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import torchnet as tnt
@@ -151,9 +152,9 @@ def main(cfg, cuda=torch.cuda.is_available()):
             return ''.join([voc[t] for t in toks[0:num]])
         for true_seqs, transcriptions in base_seqs:
             true_nts = labels2strings(true_seqs, lookup=_nt_dict_)
-            reshaped_trans = transcriptions.permute(1,0,2) # (TxBxD => BxTxD)
-            amax_nts = labels2strings(argmax_decode(reshaped_trans), lookup=_nt_dict_)
-            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(reshaped_trans.data)
+            logits = F.softmax(transcriptions.permute(1,0,2), dim=2) # (TxBxD => BxTxD)
+            amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
+            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
             pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
             for i in range(min(len(true_nts), len(pred_nts))):
                 tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])
