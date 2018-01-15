@@ -79,9 +79,8 @@ def main(cfg, cuda=torch.cuda.is_available()):
         sequences = Variable(concat_labels(sequences_, sequence_lengths_))
         sequence_lengths = Variable(sequence_lengths_)
         # compute predicted labels:
-        out = network(signals)
+        transcriptions = network(signals).permute(2,0,1) # Permute: BxDxT => TxBxD
         # compute CTC loss and return:
-        transcriptions = out.permute(2,0,1) # BxDxT => TxBxD
         loss = ctc_loss_fn(transcriptions, sequences.int(), signal_lengths.int(), sequence_lengths.int())
         return loss, transcriptions
 
@@ -121,10 +120,12 @@ def main(cfg, cuda=torch.cuda.is_available()):
     #-- hook: reset all meters at the start of the epoch
     def on_start_epoch(state):
         reset_all_meters()
+        network.train() # set to training mode for batch norm
         state['iterator'] = tqdm(state['iterator'])
     
     #-- hook: perform validation and beam-search-decoding at end of each epoch:
     def on_end_epoch(state):
+        network.eval() # set to validation mode for batch-norm
         # 10 steps of validation; average the loss:
         val_losses = []
         base_seqs = []

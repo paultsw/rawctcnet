@@ -40,8 +40,7 @@ class CausalConv1d(nn.Module):
         """
         Forward pass through the internal conv1d and removes the last `self.padding` elements.
         """
-        conv1d_out = self.conv1d(seq)
-        return conv1d_out[:,:,0:seq.size(2)]
+        return self.conv1d(seq)[:,:,0:seq.size(2)]
 
 
 class NonCausalConv1d(nn.Module):
@@ -75,8 +74,7 @@ class NonCausalConv1d(nn.Module):
         Forward pass through the internal conv1d; slice off the same dimension as the original
         sequence length to preserve temporal resolution.
         """
-        conv1d_out = self.conv1d(seq)
-        return conv1d_out[:,:,0:seq.size(2)]
+        return self.conv1d(seq)[:,:,0:seq.size(2)]
 
 
 # ===== ===== ===== ===== ===== ===== ===== ===== ===== =====

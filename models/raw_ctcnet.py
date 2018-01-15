@@ -120,7 +120,7 @@ class RawCTCNet(nn.Module):
         * seq: a FloatTensor variable of shape (batch_size, 1, seq_length).
         
         Returns:
-        * logit_seq: a FloatTensor variable of shape (batch_size, out_seq_dim, seq_length).
+        * out: a FloatTensor variable of shape (batch_size, out_dim, seq_length).
         """
         # initial featurization from raw:
         out = self.feature_layer(seq)
@@ -143,9 +143,9 @@ class RawCTCNet(nn.Module):
             skips_sum = skips_sum + self.bottlenecks[l](skip)
 
         # run through output stack:
-        logit_seq = self.output_block(skips_sum)
+        out = self.output_block(skips_sum)
 
-        if not self.softmax: return logit_seq
+        if not self.softmax: return out
         
-        reshaped_logit_seq, _axes = reshape_in(logit_seq)
-        return reshape_out(F.softmax(reshaped_logit_seq), _axes)
+        out, _axes = reshape_in(out)
+        return reshape_out(F.softmax(out, dim=1), _axes)

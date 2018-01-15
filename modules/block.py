@@ -59,27 +59,22 @@ class ResidualBlock(nn.Module):
         * seq: a FloatTensor variable of shape (batch, in_channels, seq_length).
         
         Returns: (residual_out, skip_out) where:
-        * residual_out: residual block output sequence.
-        * skip_out: the skip-connection output sequence.
+        * out: residual block output sequence.
+        * skip: the skip-connection output sequence.
         """
-        # 1) pass through dilated convolutions:
-        conv_tanh_out = self.conv_tanh(seq)
-        conv_sigmoid_out = self.conv_sigmoid(seq)
-        
-        # 2) pass through gated activation:
-        activation_out = self.gated_activation(conv_tanh_out, conv_sigmoid_out)
+        # pass through tanh/sigmoid dilated convolutions & gated activation:
+        out = self.gated_activation(self.conv_tanh(seq), self.conv_sigmoid(seq))
 
-        # 3) conv1x1 passes:
-        conv1x1_residual_out = self.conv1x1_residual(activation_out)
-        skip_out = self.conv1x1_skip(activation_out)
+        # conv1x1 passes:
+        out = self.conv1x1_residual(out)
+        skip = self.conv1x1_skip(out)
 
-        # 4) final residual addition:
+        # final residual addition:
         reshaped_seq, axes = reshape_in(seq)
-        residual_proj_out = reshape_out(self.residual_proj(reshaped_seq), axes)
-        residual_out = conv1x1_residual_out + residual_proj_out
+        out = out + reshape_out(self.residual_proj(reshaped_seq), axes)
 
-        # 5) return residual-added sequence and skip-connection sequence:
-        return (residual_out, skip_out)
+        # return residual-added sequence and skip-connection sequence:
+        return (out, skip)
 
 
 ### ===== ===== ===== ===== Residual Multiplicative Block.
