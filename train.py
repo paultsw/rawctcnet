@@ -194,8 +194,9 @@ if __name__ == '__main__':
                         help="Paths to validation dataset(s), in comma-semicolon list format:"
                         "'idx0.pth,sig0.pth,seq0.pth[;idx1.pth,sig1.pth,seq1.pth;...]'")
     args = parser.parse_args()
-    assert os.path.exists(args.save_dir)
-    assert ((args.logfile is sys.stdout) or os.path.exists(args.logfile))
+    assert os.path.exists(args.save_dir), "save directory does not exist"
+    assert ((args.logfile is sys.stdout) or os.path.exists(args.logfile)), "log file does not exist"
+    assert (args.max_epochs < 300), "max_epochs too high --- concatenate your datasets"
     train_datasets = parse_dataset_paths(args.train_data)
     valid_datasets = parse_dataset_paths(args.valid_data)
     log_fp = open(args.logfile, 'w') if not (args.logfile is sys.stdout) else args.logfile
