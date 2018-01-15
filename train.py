@@ -152,11 +152,13 @@ def main(cfg, cuda=torch.cuda.is_available()):
         for true_seqs, transcriptions in base_seqs:
             true_nts = labels2strings(true_seqs, lookup=_nt_dict_)
             reshaped_trans = transcriptions.permute(1,0,2) # (TxBxD => BxTxD)
+            amax_nts = labels2strings(argmax_decode(reshaped_trans), lookup=_nt_dict_)
             beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(reshaped_trans.data)
             pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
             for i in range(min(len(true_nts), len(pred_nts))):
                 tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])
                 tqdm.write("Beam Seq: {0}".format(pred_nts[i]), file=cfg['logfile'])
+                tqdm.write("Amax Seq: {0}".format(amax_nts[i]), file=cfg['logfile'])
                 tqdm.write("- " * 40, file=cfg['logfile'])
 
         # save model:
