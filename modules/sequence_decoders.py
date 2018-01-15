@@ -7,16 +7,18 @@ import torch.nn.functional as F
 
 def argmax_decode(logits):
     """
-    Given a batch of logits represented as a tensor, 
+    Given a batch of logits represented as a FloatTensor/FloatTensor Variable, return decoded
+    integer labels according to argmax at each logit.
 
     Args:
     * logits: a FloatTensor or FloatTensor variable of shape (batch, sequence, logit). The final
     coordinate of the `logit`-dimension is assumed to be the probability of the blank label.
     
     Returns:
-    * labels: a LongtTensor or LongTensor variable of shape (batch, sequence), where each entry
-    is the integer labeling of the logit, based on the argmaxed coordinate.
+    * labels: a LongTensor of shape (batch, sequence), where each entry is the integer labeling of
+    the logit, based on the argmaxed coordinate.
     """
+    if isinstance(labels, torch.autograd.Variable): logits = logits.data
     labels = logits.new(logits.size(0), logits.size(1))
     _, labels = torch.max(logits, dim=2)
     return labels
