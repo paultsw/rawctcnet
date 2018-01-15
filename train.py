@@ -66,6 +66,12 @@ def main(cfg, cuda=torch.cuda.is_available()):
     if cuda:
         print("CUDA detected; placed network on GPU.")
         network.cuda()
+    if cfg['model'] is not None:
+        print("Loading model file...")
+        try:
+            network.load_state_dict(torch.load(cfg['model']))
+        except:
+            print("ERR: could not restore model. Check model datatype/dimensions.")
 
     ### build CTCLoss and model evaluation function:
     ctc_loss_fn = CTCLoss()
@@ -155,8 +161,9 @@ def main(cfg, cuda=torch.cuda.is_available()):
 
         # save model:
         try:
-            mdl_path = os.path.join(cfg['save_dir'], "ctc_encoder.{0}.pth".format(state['epoch']))
-            torch.save(encoder.state_dict(), mdl_path)
+            mdl_dtype = "cuda" if cuda else "cpu"
+            mdl_path = os.path.join(cfg['save_dir'], "ctc_encoder.{0}.{1}.pth".format(state['epoch'], mdl_dtype))
+            torch.save(network.state_dict(), mdl_path)
             tqdm.write("Saved model.", file=cfg['logfile'])
         except:
             tqdm.write("Unable to serialize models. Moving on...", file=cfg['logfile'])
@@ -188,6 +195,8 @@ if __name__ == '__main__':
                         help="Path to save models at end of each epoch. [cwd]")
     parser.add_argument("--logfile", dest="logfile", default=sys.stdout,
                         help="File to log progress and validation results. [STDOUT]")
+    parser.add_argument("--model", dest="model", default=None,
+                        help="Continue training from a previously-saved model [None]")
     parser.add_argument('--train_data', required=True, dest='train_data', type=str,
                         help="Paths to training dataset(s), in comma-semicolon list format:"
                         "'idx0.pth,sig0.pth,seq0.pth[;idx1.pth,sig1.pth,seq1.pth;...]'")
@@ -198,6 +207,8 @@ if __name__ == '__main__':
     assert os.path.exists(args.save_dir), "save directory does not exist"
     assert ((args.logfile is sys.stdout) or os.path.exists(args.logfile)), "log file does not exist"
     assert (args.max_epochs < 300), "max_epochs too high --- concatenate your datasets"
+    if args.model is not None:
+        assert os.path.exists(args.model), "Model file does not exist"
     train_datasets = parse_dataset_paths(args.train_data)
     valid_datasets = parse_dataset_paths(args.valid_data)
     log_fp = open(args.logfile, 'w') if not (args.logfile is sys.stdout) else args.logfile
@@ -208,6 +219,7 @@ if __name__ == '__main__':
         'print_every': args.print_every,
         'save_dir': args.save_dir,
         'logfile': log_fp,
+        'model': args.model,
         'train_data_paths': train_datasets,
         'valid_data_paths': valid_datasets
     }
