@@ -97,7 +97,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
     ### build beam search decoder:
     beam_labels = [' ', 'A', 'G', 'C', 'T']
     beam_blank_id = 0
-    beam_decoder = CTCBeamDecoder(beam_labels, beam_width=16, blank_id=beam_blank_id, num_processes=8)
+    beam_decoder = CTCBeamDecoder(beam_labels, beam_width=100, blank_id=beam_blank_id, num_processes=4)
     print("Constructed CTC beam search decoder.")
 
     ### build engine, meters, and hooks:
