@@ -17,7 +17,7 @@ from ctcdecode import CTCBeamDecoder
 # custom modules/datasets:
 from models.raw_ctcnet import RawCTCNet
 from modules.sequence_decoders import argmax_decode, labels2strings
-from utils.data import SeqTensorDataset, sequence_collate_fn, concat_labels
+from utils.data import SeqTensorDataset, sequence_collate_fn, concat_labels, mask_padding
 from utils.parser import parse_dataset_paths
 # etc.:
 from tqdm import tqdm
@@ -142,7 +142,10 @@ def main(cfg, cuda=torch.cuda.is_available()):
             val_loss, transcriptions = model_loss(val_sample)
             val_losses.append(val_loss.data[0])
             sequences = val_sample[2]
-            base_seqs.append((sequences, transcriptions))
+            # mask out the padding & permute (TxBxD => BxTxD):
+            scores = mask_padding(transcriptions.permute(1,0,2), val_sample[1], fill_logit_idx=0)
+            logits = F.softmax(scores, dim=2)
+            base_seqs.append((sequences, logits))
         avg_val_loss = np.mean(val_losses)
         tqdm.write("EPOCH {0} | Avg. Val Loss: {1}".format(state['epoch'], avg_val_loss), file=cfg['logfile'])
         
@@ -150,11 +153,10 @@ def main(cfg, cuda=torch.cuda.is_available()):
         _nt_dict_ = { 0: ' ', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
         def convert_to_string(toks, voc, num):
             return ''.join([voc[t] for t in toks[0:num]])
-        for true_seqs, transcriptions in base_seqs:
+        for true_seqs, logits in base_seqs:
             true_nts = labels2strings(true_seqs, lookup=_nt_dict_)
-            logits = F.softmax(transcriptions.permute(1,0,2), dim=2) # (TxBxD => BxTxD)
             amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
-            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
+            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits)
             pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
             for i in range(min(len(true_nts), len(pred_nts))):
                 tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])
