@@ -183,8 +183,14 @@ def mask_padding(seqs, seq_lengths, fill_logit_idx=0):
     Returns:
     * out: FloatTensor or variable of same shape as `seqs`, with all values past `seq_lengths` masked to the specified NULL token.
     """
-    if isinstance(seqs, torch.autograd.Variable): _seqs = seqs.data
-    if isinstance(seq_lengths, torch.autograd.Variable): _seq_lengths = seq_lengths.data
+    if isinstance(seqs, torch.autograd.Variable):
+        _seqs = seqs.data
+    else:
+        _seqs = seqs
+    if isinstance(seq_lengths, torch.autograd.Variable):
+        _seq_lengths = seq_lengths.data
+    else:
+        _seq_lengths = seq_lengths
 
     # construct a tensor which is full of <PAD> values:
     out_tsr = _seqs.new(_seqs.shape)
