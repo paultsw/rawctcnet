@@ -62,7 +62,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
     num_labels = 5
     out_dim = 512
     network = RawCTCNet(in_dim, num_labels, layers, out_dim, input_kw=1, input_dil=1,
-                        positions=True, softmax=False, causal=False)
+                        positions=True, softmax=False, causal=False, batch_norm=False)
     print("Constructed network.")
     if cuda:
         print("CUDA detected; placed network on GPU.")

@@ -15,7 +15,7 @@ class RawCTCNet(nn.Module):
     Specification of a classifier network.
     """
     def __init__(self, in_dim, num_labels, layers, out_dim, input_kw=2, input_dil=1,
-                 positions=False, softmax=False, causal=False):
+                 positions=False, softmax=False, causal=False, batch_norm=False):
         """
         Constructor for WaveNetClassifier.
 
@@ -31,6 +31,7 @@ class RawCTCNet(nn.Module):
         * positions: if True, use conv1x1 to mix position information to features.
         * softmax: if True, softmax the output layer before returning. If False, return un-normalized sequence.
         * causal: if True, use causal convolutions; otherwise use standard convolutions.
+        * batch_norm: if True, apply a batch-norm before each residual block.
         """
         ### parent constructor
         super(RawCTCNet, self).__init__()
@@ -50,6 +51,8 @@ class RawCTCNet(nn.Module):
         self.softmax = softmax
         # causal vs. standard convolutions:
         self.causal = causal
+        # batch-norm on/off:
+        self.batch_norm = batch_norm
 
         ### submodules
         # convolutional featurization layer:
@@ -77,6 +80,13 @@ class RawCTCNet(nn.Module):
             skip_conn_bottlenecks.append( nn.Conv1d(c_out, out_dim, kernel_size=1, padding=0, dilation=1) )
         self.convolutions = nn.ModuleList(convolutions)
         self.bottlenecks = nn.ModuleList(skip_conn_bottlenecks)
+
+        # optional batch norms:
+        if self.batch_norm:
+            batch_norms = []
+            for (c_in,_,_,_) in layers:
+                batch_norms.append( nn.BatchNorm1d(c_in, affine=True) )
+            self.batch_norms = nn.ModuleList(batch_norms)
 
         # (1x1 Conv + ReLU + 1x1 Conv) stack, going from output dimension to logits over labels:
         self.output_block = nn.Sequential(
@@ -139,6 +149,7 @@ class RawCTCNet(nn.Module):
 
         # run through convolutional stack (& accumulate skip connections thru bottlenecks):
         for l in range(self.num_layers):
+            if self.batch_norm: out = self.batch_norms[l](out)
             out, skip = self.convolutions[l](out)
             skips_sum = skips_sum + self.bottlenecks[l](skip)
 
