@@ -156,7 +156,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
         for true_seqs, logits in base_seqs:
             true_nts = labels2strings(true_seqs, lookup=_nt_dict_)
             amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
-            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits)
+            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
             pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
             for i in range(min(len(true_nts), len(pred_nts))):
                 tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])

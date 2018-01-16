@@ -175,13 +175,13 @@ def mask_padding(seqs, seq_lengths, fill_logit_idx=0):
     of the input sequences.)
 
     Args:
-    * seqs: FloatTensor variable of shape (batch, dim(logits), max(seq_lengths)) ~ (B x T x D). The logit sequences.
-    * seq_lengths: IntTensor variable of shape (batch,). The lengths of each sequence.
+    * seqs: FloatTensor or variable of shape (batch, dim(logits), max(seq_lengths)) ~ (B x T x D). The logit sequences.
+    * seq_lengths: IntTensor or variable of shape (batch,). The lengths of each sequence.
     * fill_logit_idx: the logit index to put 100% of the weight upon; this is usually the dimension of each logit
     that represents the <PAD>, <NULL>, or <EMPTY> character.
 
     Returns:
-    * out: FloatTensor of same shape as `seqs`, with all values past `seq_lengths` masked to the specified NULL token.
+    * out: FloatTensor or variable of same shape as `seqs`, with all values past `seq_lengths` masked to the specified NULL token.
     """
     if isinstance(seqs, torch.autograd.Variable): seqs = seqs.data
     if isinstance(seq_lengths, torch.autograd.Variable): seq_lengths = seq_lengths.data
@@ -194,4 +194,7 @@ def mask_padding(seqs, seq_lengths, fill_logit_idx=0):
     for b in range(out_tsr.size(0)):
         out_tsr[b][0:seq_lengths[b]] = seqs[b][0:seq_lengths[b]]
 
-    return out_tsr
+    if isinstance(seqs, torch.autograd.Variable):
+        return torch.autograd.Variable(out_tsr)
+    else:
+        return out_tsr
