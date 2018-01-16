@@ -187,7 +187,7 @@ def mask_padding(seqs, seq_lengths, fill_logit_idx=0):
     if isinstance(seq_lengths, torch.autograd.Variable): seq_lengths = seq_lengths.data
 
     # construct a tensor which is full of <PAD> values:
-    out_tsr = seqs.data.new(seqs.shape)
+    out_tsr = seqs.new(seqs.shape)
     out_tsr[:,:,fill_logit_idx] = 1.
     
     # copy over seqs:
