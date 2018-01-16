@@ -29,7 +29,7 @@ import sys
 
 def main(cfg, cuda=torch.cuda.is_available()):
     ### flush cfg to output log file:
-    tqdm.write(str(cfg))
+    tqdm.write(str(cfg), file=cfg['logfile'])
     tqdm.write('-' * 80)
 
     ### define function that returns a data loader:
