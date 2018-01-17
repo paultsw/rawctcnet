@@ -64,6 +64,11 @@ We vary over two ranges of settings:
 * `MAX_DIL`: maximum dilation within each residual stack (the biggest power of 2) -- `16,32,64,128`;
 * `NUM_STACKS`: number of residual stacks of dilated convolutions: `3,6`.
 
+We also note that as the model size increases, smaller and smaller learning rates should be used. This is due to
+the increase in non-convexity (e.g. number of "hills and valleys") in the error surface corresponding to the parameter
+space. In the tests below, we will start off with the optimal learning rate and batch size as discovered in earlier
+tests, and decrease the learning rate by a factor of 1/2 four times and note the best result.
+
 Tests
 -----
 We will run the following hyperparameter-tuning tests; all are with respect to a single epoch on a tiny dataset.
@@ -73,34 +78,42 @@ In the following, `<OPT>` means the optimal setting for that parameter, discover
 #### Padding:
 * [X] `PADDING=OFF`, `BATCH=8`, `BATCHNORM=FALSE`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0001`
 * [X] `PADDING=ON`, `BATCH=8`, `BATCHNORM=FALSE`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0001`
+* _Conclusion: padding provides little-to-no benefit. Turn it off._
 #### Batch-Norm:
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=TRUE`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0001`
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=TRUE`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0001`
+* _Conclusion: batch-norm provides a huge increase in convergence speed during training. Keep it on._
 #### LR (AdamOpt):
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.001`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0005`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0001`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.00005`
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.001` (_Val.loss: 41.688525286587804_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0005` (_Val.loss: 34.19132614135742_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.0001` (_Val.loss: 11.2378380948847_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAM@0.00005` (_Val.loss: 10.11766067418185_)
+* _Conclusion: comparable performance to Adamax._
 #### LR (AdaMaxOpt):
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.002`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.001`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.0005`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.0001`
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.002` (_Val.loss: 155.1495721990412_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.001` (_Val.loss: 52.05568382956765_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.0005` (_Val.loss: 8.574921954761852_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAMAX@0.0001` (_Val.loss: 14.724966699426824_)
+* _Conclusion: 0.0005 gave the best convergence._
 #### LR (AdagradOpt):
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.01`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.005`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.001`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.0005`
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.01` (_Val.loss: 26.675187717784535_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.005` (_Val.loss: 14.264448079195889_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.001` (_Val.loss: 11.691955696452748_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.0005`(_Val.loss: 16.059732740575615_)
+* _Conclusion: performance at lower learning rates is not as good as Adam/Adamax._
 #### Batch Size:
-* [ ] `PADDING=<OPT>`, `BATCH=1`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*SCALE`
-* [ ] `PADDING=<OPT>`, `BATCH=4`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*SCALE`
-* [ ] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*SCALE`
-* [ ] `PADDING=<OPT>`, `BATCH=16`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*SCALE`
-* [ ] `PADDING=<OPT>`, `BATCH=32`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*SCALE`
+* [X] `PADDING=<OPT>`, `BATCH=1`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*0.5` (_Val.loss:_)
+* [X] `PADDING=<OPT>`, `BATCH=4`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*0.7` (_Val.loss:_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*1.0` (_Val.loss:_)
+* [X] `PADDING=<OPT>`, `BATCH=16`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*1.4` (_Val.loss:_)
+* [X] `PADDING=<OPT>`, `BATCH=32`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*2.0` (_Val.loss:_)
+* _Conclusion: We chose AdaMax@LR=0.0005 as the default optimizer and learning rate. (...)_
 #### Convolutional Layers (Dilation):
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=16`, `NUM_STACK=3`, `LR=<OPT>`
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=32`, `NUM_STACK=3`, `LR=<OPT>`
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>`
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=128`, `NUM_STACK=3`, `LR=<OPT>`
-### Convolutional Layers (Stacks)
+* _Conclusion: (...)_
+#### Convolutional Layers (Stacks)
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=<OPT>`, `NUM_STACK=6`, `LR=<OPT>`
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=<OPT>`, `NUM_STACK=9`, `LR=<OPT>`
+* _Conclusion: (...)_
