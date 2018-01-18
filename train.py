@@ -147,7 +147,9 @@ def main(cfg, cuda=torch.cuda.is_available()):
             logits = F.softmax(scores, dim=2)
             base_seqs.append((sequences, logits))
         avg_val_loss = np.mean(val_losses)
+        # log to both logfile and stdout:
         tqdm.write("EPOCH {0} | Avg. Val Loss: {1}".format(state['epoch'], avg_val_loss), file=cfg['logfile'])
+        print("EPOCH {0} | Avg. Val Loss: {1}".format(state['epoch'], avg_val_loss))
         
         # beam search decoding:
         _nt_dict_ = { 0: ' ', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
