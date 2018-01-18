@@ -62,7 +62,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
     num_labels = 5
     out_dim = 512
     network = RawCTCNet(in_dim, num_labels, layers, out_dim, input_kw=1, input_dil=1,
-                        positions=True, softmax=False, causal=False, batch_norm=False)
+                        positions=True, softmax=False, causal=False, batch_norm=True)
     print("Constructed network.")
     if cuda:
         print("CUDA detected; placed network on GPU.")
@@ -92,8 +92,8 @@ def main(cfg, cuda=torch.cuda.is_available()):
         return loss, transcriptions
 
     ### build optimizer:
-    opt = optim.Adam(network.parameters(), lr=0.0001)
-    print("Constructed Adam optimizer.")
+    opt = optim.Adamax(network.parameters(), lr=cfg['lr'])
+    print("Constructed Adamax optimizer.")
 
     ### build beam search decoder:
     beam_labels = [' ', 'A', 'G', 'C', 'T']
@@ -193,7 +193,9 @@ if __name__ == '__main__':
     parser.add_argument("--print_every", dest='print_every', default=25, type=int,
                         help="Log the loss to stdout every N steps. [25]")
     parser.add_argument("--batch_size", dest='batch_size', default=1, type=int,
-                        help="Number of sequences per batch [1]")
+                        help="Number of sequences per batch. [1]")
+    parser.add_argument("--lr", dest='lr', default=0.0002, type=float,
+                        help="Learning rate for SGD optimizer. [0.0002]")
     parser.add_argument("--num_stacks", dest='num_stacks', default=3, type=int,
                         help="Number of repeated residual stacks. [3]")
     parser.add_argument("--save_dir", dest="save_dir", default="./",
@@ -220,6 +222,7 @@ if __name__ == '__main__':
     cfg = {
         'max_epochs': args.max_epochs,
         'batch_size': args.batch_size,
+        'lr': args.lr,
         'num_stacks': args.num_stacks,
         'print_every': args.print_every,
         'save_dir': args.save_dir,
