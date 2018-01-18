@@ -101,12 +101,12 @@ In the following, `<OPT>` means the optimal setting for that parameter, discover
 * [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=ADAGRAD@0.0005`(_Val.loss: 16.059732740575615_)
 * _Conclusion: performance at lower learning rates is not as good as Adam/Adamax._
 #### Batch Size:
-* [X] `PADDING=<OPT>`, `BATCH=1`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*0.5` (_Val.loss:_)
-* [X] `PADDING=<OPT>`, `BATCH=4`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*0.7` (_Val.loss:_)
-* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*1.0` (_Val.loss:_)
-* [X] `PADDING=<OPT>`, `BATCH=16`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*1.4` (_Val.loss:_)
-* [X] `PADDING=<OPT>`, `BATCH=32`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*2.0` (_Val.loss:_)
-* _Conclusion: We chose AdaMax@LR=0.0005 as the default optimizer and learning rate. (...)_
+* [X] `PADDING=<OPT>`, `BATCH=1`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*0.5` (_Val.loss: 1.0764162296598607_)
+* [X] `PADDING=<OPT>`, `BATCH=4`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*0.7` (_Val.loss: 4.33007783239538_)
+* [X] `PADDING=<OPT>`, `BATCH=8`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*1.0` (_Val.loss: 10.196995084935969_)
+* [X] `PADDING=<OPT>`, `BATCH=16`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*1.4` (_Val.loss: 15.626627011732621_)
+* [X] `PADDING=<OPT>`, `BATCH=32`, `BATCHNORM=<OPT>`, `MAX_DIL=64`, `NUM_STACK=3`, `LR=<OPT>@<OPT>*2.0` (_Val.loss: 56.45656065507369_)
+* _Conclusion: We chose AdaMax@LR=0.0005 as the default optimizer and learning rate. We noticed that there was a trade-off between batch size and accuracy on validation; this leads us to a strategy in which we can consider training on large batches at the start and fine-tuning on smaller batch-sizes afterwards, as large batch sizes lead to faster convergence at the tradeoff of a worse validation loss._
 #### Convolutional Layers (Dilation):
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=16`, `NUM_STACK=3`, `LR=<OPT>`
 * [ ] `PADDING=<OPT>`, `BATCH=<OPT>`, `BATCHNORM=<OPT>`, `MAX_DIL=32`, `NUM_STACK=3`, `LR=<OPT>`
