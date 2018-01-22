@@ -123,7 +123,7 @@ def sequence_collate_fn(data):
 
     # batch sequence tensors:
     input_batch = pad_sequence([d[0] for d in data], batch_first=True)
-    target_batch = pad_sequence([d[1] for d in data], batch_first=True, pad_value=4)
+    target_batch = pad_sequence([d[1] for d in data], batch_first=True, pad_value=0)
 
     return (input_batch, input_lengths, target_batch, target_lengths)
 
