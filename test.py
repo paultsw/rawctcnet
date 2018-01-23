@@ -71,10 +71,10 @@ def main(cfg, cuda=torch.cuda.is_available()):
     def model_loss(sample):
         # unpack inputs and wrap in Variables:
         signals_, signal_lengths_, sequences_, sequence_lengths_ = sample
-        signals = Variable(maybe_gpu(signals_.permute(0,2,1), cuda)) # BxTxD => BxDxT
-        signal_lengths = Variable(signal_lengths_)
-        sequences = Variable(concat_labels(sequences_, sequence_lengths_))
-        sequence_lengths = Variable(sequence_lengths_)
+        signals = Variable(maybe_gpu(signals_.permute(0,2,1), cuda), volatile=True) # BxTxD => BxDxT
+        signal_lengths = Variable(signal_lengths_, volatile=True)
+        sequences = Variable(concat_labels(sequences_, sequence_lengths_), volatile=True)
+        sequence_lengths = Variable(sequence_lengths_, volatile=True)
         # compute predicted labels:
         transcriptions = network(signals).permute(2,0,1) # Permute: BxDxT => TxBxD
         # compute CTC loss and return:
