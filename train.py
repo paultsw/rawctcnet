@@ -45,9 +45,11 @@ def main(cfg, cuda=torch.cuda.is_available()):
             num_workers_setting = 1
 
         # form a (possibly concatenated) dataset:
-        ds = SeqTensorDataset(torch.load(datasets[0][0]), torch.load(datasets[0][1]), torch.load(datasets[0][2]))
+        ds = SeqTensorDataset(torch.load(datasets[0][0]), torch.load(datasets[0][1]),
+                              torch.load(datasets[0][2]), torch.load(datasets[0][3]))
         for dataset in datasets[1:]:
-            ds += SeqTensorDataset(torch.load(dataset[0]), torch.load(dataset[1]), torch.load(dataset[2]))
+            ds += SeqTensorDataset(torch.load(dataset[0]), torch.load(dataset[1]),
+                                   torch.load(dataset[2]), torch.load(dataset[3]))
 
         # return a loader that iterates over the dataset of choice; pagelock the memory location if GPU detected:
         return DataLoader(ds, batch_size=cfg['batch_size'],
@@ -208,10 +210,10 @@ if __name__ == '__main__':
                         help="Continue training from a previously-saved model [None]")
     parser.add_argument('--train_data', required=True, dest='train_data', type=str,
                         help="Paths to training dataset(s), in comma-semicolon list format:"
-                        "'idx0.pth,sig0.pth,seq0.pth[;idx1.pth,sig1.pth,seq1.pth;...]'")
+                        "'sig_idx0.pth,sig0.pth,seq_idx0.pth,seq0.pth[;sig_idx1.pth,sig1.pth,seq_idx0.pth,seq1.pth;...]'")
     parser.add_argument('--valid_data', required=True, dest='valid_data', type=str,
                         help="Paths to validation dataset(s), in comma-semicolon list format:"
-                        "'idx0.pth,sig0.pth,seq0.pth[;idx1.pth,sig1.pth,seq1.pth;...]'")
+                        "'sig_idx0.pth,sig0.pth,seq_idx0.pth,seq0.pth[;sig_idx1.pth,sig1.pth,seq_idx0.pth,seq1.pth;...]''")
     args = parser.parse_args()
     assert os.path.exists(args.save_dir), "save directory does not exist"
     assert ((args.logfile is sys.stdout) or os.path.exists(args.logfile)), "log file does not exist"

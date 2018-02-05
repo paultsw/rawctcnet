@@ -3,7 +3,7 @@ Sequential data-loading helper classes.
 
 Usage:
 
->>> seqdata = SeqTensorDataset(indices, signals, sequences) 
+>>> seqdata = SeqTensorDataset(sig_indices, signals, seq_indices, sequences) 
 >>> loader = torch.utils.data.DataLoader(seqdata, batch_size=8, shuffle=True, collate_fn=sequence_collate_fn)
 >>> for (input_seq_batch, target_seq_batch) in loader:
 >>>     # [... perform training loop and computations here ...]
@@ -16,38 +16,41 @@ import os
 class SeqTensorDataset(data.Dataset):
     """
     Constructor arguments:
-    * idx_tensor: of shape (num_examples, 2). The start/stop indices for each signal.
+    * sig_idx_tensor: of shape (num_examples, 2). The start/stop indices for each signal.
     * signal_tensor: of shape (total_samples, [signal_dim]).
-    * sequence_tensor: of shape (num_examples, max_seq_length).
+    * seq_idx_tensor: of shape (num_examples, 2). The start/stop indices for each sequence.
+    * sequence_tensor: of shape (total_seq_length).
     
-    In the above, `total_samples` is equal to the sum of the lengths of all the sequences.
+    In the above, `total_samples` is equal to the sum of the lengths of all the signals and 
+    `total_seq_length` is equal to the sum of the lengths of all the ground truth sequences.
     We enforce a condition that fetched signals must be of shape (signal_length, D) where D may be == 1.
     If the input signal tensor is a 1D sequence of shape (total_samples,), we unsqueeze the final dimension.
-    This does not hold for 
 
     `__getitem__` returns a tuple with the following components:
     * _signal: a FloatTensor of size (signal_length, max{1,signal_dim}).
     * _seq: an IntTensor of size (seq_length,).
     """
-    def __init__(self, idx_tensor, signal_tensor, sequence_tensor):
+    def __init__(self, sig_idx_tensor, signal_tensor, seq_idx_tensor, sequence_tensor):
         # sanity check:
-        assert (idx_tensor.size(0) == sequence_tensor.size(0)), "Must have same number of examples in all tensors"
+        assert (sig_idx_tensor.size(0) == seq_idx_tensor.size(0)), "Must have same number of examples in all tensors"
         unsqueeze = (len(signal_tensor.size()) == 1) # bool indicating whether to unsqueeze
         # save tensors as object fields:
-        self.indices = idx_tensor
+        self.seq_indices = seq_idx_tensor
+        self.sig_indices = sig_idx_tensor
         self.signals = signal_tensor if not unsqueeze else signal_tensor.unsqueeze(-1)
         self.sequences = sequence_tensor
 
     def __getitem__(self, index):
         # get signal:
-        _start, _stop = self.indices[index]
-        _signal = self.signals[_start:_stop]
+        sig_start, sig_stop = self.sig_indices[index]
+        _signal = self.signals[sig_start:sig_stop]
         # get sequence:
-        _seq = self.sequences[index]
+        seq_start, seq_stop = self.seq_indices[index]
+        _seq = self.sequences[seq_start:seq_stop]
         return (_signal, _seq)
 
     def __len__(self):
-        return self.indices.size(0)
+        return self.seq_indices.size(0)
 
 
 def pad_sequence(sequences, batch_first=False, pad_value=0):

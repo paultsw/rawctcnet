@@ -38,9 +38,11 @@ def main(cfg, cuda=torch.cuda.is_available()):
         nworkers = cfg['num_workers']
         
         # (possibly) concatenate datasets together:
-        ds = SeqTensorDataset(torch.load(datasets[0][0]), torch.load(datasets[0][1]), torch.load(datasets[0][2]))
+        ds = SeqTensorDataset(torch.load(datasets[0][0]), torch.load(datasets[0][1]),
+                              torch.load(datasets[0][2]), torch.load(datasets[0][3]))
         for dataset in datasets[1:]:
-            ds += SeqTensorDataset(torch.load(dataset[0]), torch.load(dataset[1]), torch.load(dataset[2]))
+            ds += SeqTensorDataset(torch.load(dataset[0]), torch.load(dataset[1]),
+                                   torch.load(dataset[2]), torch.load(dataset[3]))
         
         # return a dataloader iterating over datasets; pagelock memory location if GPU detected:
         return DataLoader(ds, batch_size=cfg['batch_size'], shuffle=True,
