@@ -87,7 +87,7 @@ def pad_sequence(sequences, batch_first=False, pad_value=0):
         length = seq.size(0)
         # temporary sort check, can be removed when we handle sorting internally
         if prev_l < length:
-            raise ValueError("lengths array has to be sorted in decreasing order")
+            print("[WARN] lengths array not sorted in decreasing order")
         prev_l = length
         # use index notation to prevent duplicate references to the variable
         if batch_first:
