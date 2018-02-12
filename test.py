@@ -155,7 +155,7 @@ if __name__ == '__main__':
     # parse arguments and run sanity checks:
     assert ((args.logfile is sys.stdout) or os.path.exists(args.logfile)), "log file does not exist"
     datasets = parse_dataset_paths(args.dataset)
-    log_fp = open(arg.logfile, 'w') if not (args.logfile is sys.stdout) else args.logfile
+    log_fp = open(args.logfile, 'w') if not (args.logfile is sys.stdout) else args.logfile
     cfg = { 
         'batch_size': args.batch_size,
         'print_every': args.print_every,
