@@ -135,12 +135,12 @@ def main(cfg, cuda=torch.cuda.is_available()):
     #-- hook: perform validation and beam-search-decoding at end of each epoch:
     def on_end_epoch(state):
         network.eval() # set to validation mode for batch-norm
-        # 10 steps of validation; average the loss:
+        # K steps of validation; average the loss:
         val_losses = []
         base_seqs = []
         val_data_iterator = get_iterator('valid')
         for k,val_sample in enumerate(val_data_iterator):
-            if k > 10: break
+            if k > cfg['num_valid_steps']: break
             val_loss, transcriptions = model_loss(val_sample)
             val_losses.append(val_loss.data[0])
             sequences = val_sample[2]
@@ -196,6 +196,8 @@ if __name__ == '__main__':
                         help="Number of epochs. [100]")
     parser.add_argument("--print_every", dest='print_every', default=25, type=int,
                         help="Log the loss to stdout every N steps. [25]")
+    parser.add_argument("--num_valid_steps", dest='num_valid_steps', default=10, type=int,
+                        help="Number of validation steps to take. [10]")
     parser.add_argument("--batch_size", dest='batch_size', default=1, type=int,
                         help="Number of sequences per batch. [1]")
     parser.add_argument("--lr", dest='lr', default=0.0002, type=float,
@@ -227,6 +229,7 @@ if __name__ == '__main__':
         'max_epochs': args.max_epochs,
         'batch_size': args.batch_size,
         'lr': args.lr,
+        'num_valid_steps': args.num_valid_steps,
         'num_stacks': args.num_stacks,
         'print_every': args.print_every,
         'save_dir': args.save_dir,
