@@ -5,7 +5,7 @@ Usage:
 
 >>> seqdata = SeqTensorDataset(sig_indices, signals, seq_indices, sequences) 
 >>> loader = torch.utils.data.DataLoader(seqdata, batch_size=8, shuffle=True, collate_fn=sequence_collate_fn)
->>> for (input_seq_batch, target_seq_batch) in loader:
+>>> for (x, xlen, y, ylen) in loader:
 >>>     # [... perform training loop and computations here ...]
 """
 import numpy as np
@@ -73,9 +73,8 @@ def pad_sequence(sequences, batch_first=False, pad_value=0):
     """
     # assuming trailing dimensions and type of all the Variables
     # in sequences are same and fetching those from sequences[0]
-    max_size = sequences[0].size()
+    max_size = max([seq.size() for seq in sequences], key=lambda sz: sz[0])
     max_len, trailing_dims = max_size[0], max_size[1:]
-    prev_l = max_len
     if batch_first:
         out_dims = (len(sequences), max_len) + trailing_dims
     else:
@@ -85,10 +84,6 @@ def pad_sequence(sequences, batch_first=False, pad_value=0):
     out_batch = torch.zeros(*out_dims).add_(pad_value)
     for i, seq in enumerate(sequences):
         length = seq.size(0)
-        # temporary sort check, can be removed when we handle sorting internally
-        if prev_l < length:
-            print("[WARN] lengths array not sorted in decreasing order")
-        prev_l = length
         # use index notation to prevent duplicate references to the variable
         if batch_first:
             out_batch[i, :length, ...] = seq
