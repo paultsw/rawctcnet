@@ -27,7 +27,7 @@ import os
 import sys
 
 
-def main(cfg, cuda=torch.cuda.is_available()):
+def main(cfg, cuda=(torch.cuda.is_available() and cfg['cuda'])):
     ### flush cfg to output log file:
     tqdm.write(str(cfg), file=cfg['logfile'])
     tqdm.write('-' * 80)
@@ -210,6 +210,8 @@ if __name__ == '__main__':
                         help="File to log progress and validation results. [STDOUT]")
     parser.add_argument("--model", dest="model", default=None,
                         help="Continue training from a previously-saved model [None]")
+    parser.add_argument("--cuda", dest="cuda", choices=('on','off'), default='on',
+                        help="Use CUDA if available; does nothing on CPU-only. [on]")
     parser.add_argument('--train_data', required=True, dest='train_data', type=str,
                         help="Paths to training dataset(s), in comma-semicolon list format:"
                         "'sig_idx0.pth,sig0.pth,seq_idx0.pth,seq0.pth[;sig_idx1.pth,sig1.pth,seq_idx0.pth,seq1.pth;...]'")
@@ -235,6 +237,7 @@ if __name__ == '__main__':
         'save_dir': args.save_dir,
         'logfile': log_fp,
         'model': args.model,
+        'cuda': (True if (args.cuda == 'on') else False),
         'train_data_paths': train_datasets,
         'valid_data_paths': valid_datasets
     }
