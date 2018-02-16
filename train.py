@@ -27,7 +27,7 @@ import os
 import sys
 
 
-def main(cfg, cuda=(torch.cuda.is_available() and cfg['cuda'])):
+def main(cfg, cuda_avail=torch.cuda.is_available()):
     ### flush cfg to output log file:
     tqdm.write(str(cfg), file=cfg['logfile'])
     tqdm.write('-' * 80)
@@ -37,7 +37,7 @@ def main(cfg, cuda=(torch.cuda.is_available() and cfg['cuda'])):
         # choose between train/valid data based on `mode`:
         if mode == 'train':
             datasets = cfg['train_data_paths']
-            pin_memory_flag = cuda
+            pin_memory_flag = (cuda_avail and cfg['cuda'])
             num_workers_setting = 4
         if mode == 'valid':
             datasets = cfg['valid_data_paths']
@@ -66,7 +66,7 @@ def main(cfg, cuda=(torch.cuda.is_available() and cfg['cuda'])):
     network = RawCTCNet(in_dim, num_labels, layers, out_dim, input_kw=1, input_dil=1,
                         positions=True, softmax=False, causal=False, batch_norm=True)
     print("Constructed network.")
-    if cuda:
+    if (cuda_avail and cfg['cuda']):
         print("CUDA detected; placed network on GPU.")
         network.cuda()
     if cfg['model'] is not None:
@@ -83,7 +83,7 @@ def main(cfg, cuda=(torch.cuda.is_available() and cfg['cuda'])):
     def model_loss(sample):
         # unpack inputs and wrap as `torch.autograd.Variable`s:
         signals_, signal_lengths_, sequences_, sequence_lengths_ = sample
-        signals = Variable(maybe_gpu(signals_.permute(0,2,1), cuda)) # BxTxD => BxDxT
+        signals = Variable(maybe_gpu(signals_.permute(0,2,1), (cuda_avail and cfg['cuda']))) # BxTxD => BxDxT
         signal_lengths = Variable(signal_lengths_)
         sequences = Variable(concat_labels(sequences_, sequence_lengths_))
         sequence_lengths = Variable(sequence_lengths_)
@@ -170,7 +170,7 @@ def main(cfg, cuda=(torch.cuda.is_available() and cfg['cuda'])):
 
         # save model:
         try:
-            mdl_dtype = "cuda" if cuda else "cpu"
+            mdl_dtype = "cuda" if (cuda and cfg['cuda']) else "cpu"
             mdl_path = os.path.join(cfg['save_dir'], "ctc_encoder.{0}.{1}.pth".format(state['epoch'], mdl_dtype))
             torch.save(network.state_dict(), mdl_path)
             tqdm.write("Saved model.", file=cfg['logfile'])
