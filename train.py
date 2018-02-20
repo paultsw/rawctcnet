@@ -25,6 +25,7 @@ import argparse
 import itertools
 import os
 import sys
+import traceback
 
 
 def main(cfg, cuda_avail=torch.cuda.is_available()):
@@ -175,6 +176,8 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
             torch.save(network.state_dict(), mdl_path)
             tqdm.write("Saved model.", file=cfg['logfile'])
         except:
+            print("Unable to serialize model; Moving on. Traceback:")
+            traceback.print_exc()
             tqdm.write("Unable to serialize models. Moving on...", file=cfg['logfile'])
         
         # reset all meters for next epoch:
