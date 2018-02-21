@@ -171,7 +171,7 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
 
         # save model:
         try:
-            mdl_dtype = "cuda" if (cuda and cfg['cuda']) else "cpu"
+            mdl_dtype = "cuda" if (cuda_avail and cfg['cuda']) else "cpu"
             mdl_path = os.path.join(cfg['save_dir'], "ctc_encoder.{0}.{1}.pth".format(state['epoch'], mdl_dtype))
             torch.save(network.state_dict(), mdl_path)
             tqdm.write("Saved model.", file=cfg['logfile'])
