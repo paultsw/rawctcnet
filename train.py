@@ -122,7 +122,7 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
             trans_k = network(signal_k).permute(2,0,1) # Permute: 1xDxT => Tx1xD
 
             # compute normalized CTC loss and accumulate gradient:
-            loss = ctc_loss_fn(trans_k, sequence_k.int(), sig_k_length.int(), seq_k_length.int()) / bsz
+            loss = ctc_loss_fn(trans_k, sequence_k.int(), sig_k_length.int(), seq_k_length.int())
             loss.backward()
             total_loss += loss
             transcriptions_list.append(trans_k)
