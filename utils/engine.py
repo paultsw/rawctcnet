@@ -29,17 +29,18 @@ class Engine(object):
                 state['sample'] = sample
                 self.hook('on_sample', state)
 
+                def closure():
+                    loss, output = state['network'](state['sample'])
+                    state['output'] = output
+                    state['loss'] = loss
+                    self.hook('on_forward', state)
+                    # to free memory in save_for_backward
+                    state['output'] = None
+                    state['loss'] = None
+                    return loss
+
                 state['optimizer'].zero_grad()
-
-                loss, output = state['network'](state['sample'])
-                state['output'] = output
-                state['loss'] = loss
-                self.hook('on_forward', state)
-                # to free memory in save_for_backward
-                state['output'] = None
-                state['loss'] = None
-
-                state['optimizer'].step()
+                state['optimizer'].step(closure)
                 self.hook('on_update', state)
                 state['t'] += 1
             state['epoch'] += 1
