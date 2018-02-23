@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import torchnet as tnt
-from torchnet.engine import Engine
+from utils.engine import Engine
 # ctc modules:
 from warpctc_pytorch import CTCLoss
 from ctcdecode import CTCBeamDecoder
@@ -53,7 +53,8 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
                                    torch.load(dataset[2]), torch.load(dataset[3]))
 
         # return a loader that iterates over the dataset of choice; pagelock the memory location if GPU detected:
-        return DataLoader(ds, batch_size=cfg['batch_size'],
+        return DataLoader(ds, 
+                          batch_size=cfg['batch_size'],
                           shuffle=True,
                           num_workers=num_workers_setting,
                           collate_fn=sequence_collate_fn,
@@ -81,7 +82,60 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
     ctc_loss_fn = CTCLoss()
     print("Constructed CTC loss function.")
     maybe_gpu = lambda tsr, has_cuda: tsr if not has_cuda else tsr.cuda()
-    def model_loss(sample):
+
+    #--- this function performs the gradient descent in synchronous batched mode:
+    def batch_model_loss(sample):
+        # unpack inputs and wrap as `torch.autograd.Variable`s:
+        signals_, signal_lengths_, sequences_, sequence_lengths_ = sample
+        signals = Variable(maybe_gpu(signals_.permute(0,2,1), (cuda_avail and cfg['cuda']))) # BxTxD => BxDxT
+        signal_lengths = Variable(signal_lengths_)
+        sequences = Variable(concat_labels(sequences_, sequence_lengths_))
+        sequence_lengths = Variable(sequence_lengths_)
+        # compute predicted labels:
+        transcriptions = network(signals).permute(2,0,1) # Permute: BxDxT => TxBxD
+        # compute CTC loss and return:
+        loss = ctc_loss_fn(transcriptions, sequences.int(), signal_lengths.int(), sequence_lengths.int())
+        loss.backward()
+        return loss, transcriptions
+        
+    #--- asynchronous gradient accumulation mode
+    # compute target seqs/losses sequentially over each example, average gradients
+    def async_model_loss(sample):
+        # unpack inputs, optionally place on CUDA:
+        signals_, signal_lengths_, sequences_, sequence_lengths_ = sample
+        signals = maybe_gpu(signals_.permute(0,2,1), (cuda_avail and cfg['cuda'])) # BxTxD => BxDxT
+
+        # sequential compute over the batch:
+        total_loss = 0.0
+        transcriptions_list = []
+        bsz = signals.size(0)
+        for k in range(bsz):
+            # fetch k-th input from batched sample and wrap as Variable:
+            sig_k_scalar = signal_lengths_[k]
+            seq_k_scalar = sequence_lengths_[k]
+            sig_k_length = Variable(torch.IntTensor([sig_k_scalar]))
+            seq_k_length = Variable(torch.IntTensor([seq_k_scalar]))
+            signal_k = Variable(signals[k,:,:sig_k_scalar].unsqueeze(0))
+            sequence_k = Variable(sequences_[k,:seq_k_scalar].unsqueeze(0))
+
+            # compute transcription output:
+            trans_k = network(signal_k).permute(2,0,1) # Permute: 1xDxT => Tx1xD
+
+            # compute normalized CTC loss and accumulate gradient:
+            loss = ctc_loss_fn(trans_k, sequence_k.int(), sig_k_length.int(), seq_k_length.int()) / bsz
+            loss.backward()
+            total_loss += loss
+            transcriptions_list.append(trans_k)
+
+        # combine transcriptions back into a batch and return:
+        max_length = max([t.size(0) for t in transcriptions_list])
+        transcriptions = Variable(torch.zeros(max_length, bsz, num_labels))
+        for j,tr in enumerate(transcriptions_list):
+            transcriptions[0:tr.size(0),j,:] = tr[:,0,:]
+        return total_loss, transcriptions
+
+    #--- for evaluation-mode:
+    def model_eval(sample):
         # unpack inputs and wrap as `torch.autograd.Variable`s:
         signals_, signal_lengths_, sequences_, sequence_lengths_ = sample
         signals = Variable(maybe_gpu(signals_.permute(0,2,1), (cuda_avail and cfg['cuda']))) # BxTxD => BxDxT
@@ -93,6 +147,9 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
         # compute CTC loss and return:
         loss = ctc_loss_fn(transcriptions, sequences.int(), signal_lengths.int(), sequence_lengths.int())
         return loss, transcriptions
+
+    #--- choose appropriate model loss computation depending on command line:
+    model_loss = async_model_loss if cfg['async'] else batch_model_loss
 
     ### build optimizer:
     opt = optim.Adamax(network.parameters(), lr=cfg['lr'])
@@ -121,7 +178,7 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
     def on_update(state):
         pass
 
-    #-- hook: update loggers at each forward pass; only happens in test-mode
+    #-- hook: update loggers at each forward pass
     def on_forward(state):
         loss_meter.add(state['loss'].data[0])
         if (state['t'] % cfg['print_every'] == 0):
@@ -142,7 +199,7 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
         val_data_iterator = get_iterator('valid')
         for k,val_sample in enumerate(val_data_iterator):
             if k > cfg['num_valid_steps']: break
-            val_loss, transcriptions = model_loss(val_sample)
+            val_loss, transcriptions = model_eval(val_sample)
             val_losses.append(val_loss.data[0])
             sequences = val_sample[2]
             # mask out the padding & permute (TxBxD => BxTxD):
@@ -203,6 +260,8 @@ if __name__ == '__main__':
                         help="Number of validation steps to take. [10]")
     parser.add_argument("--batch_size", dest='batch_size', default=1, type=int,
                         help="Number of sequences per batch. [1]")
+    parser.add_argument("--async_grads", dest='async_grads', choices=('on','off'), default='off',
+                        help="Use averaged async grad updates [False]")
     parser.add_argument("--lr", dest='lr', default=0.0002, type=float,
                         help="Learning rate for SGD optimizer. [0.0002]")
     parser.add_argument("--num_stacks", dest='num_stacks', default=3, type=int,
@@ -233,6 +292,7 @@ if __name__ == '__main__':
     cfg = {
         'max_epochs': args.max_epochs,
         'batch_size': args.batch_size,
+        'async': True if (args.async_grads == 'on') else False,
         'lr': args.lr,
         'num_valid_steps': args.num_valid_steps,
         'num_stacks': args.num_stacks,
