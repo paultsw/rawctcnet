@@ -13,6 +13,7 @@ import torch
 import torch.utils.data as data
 import os
 
+
 class SeqTensorDataset(data.Dataset):
     """
     Constructor arguments:
@@ -51,6 +52,36 @@ class SeqTensorDataset(data.Dataset):
 
     def __len__(self):
         return self.seq_indices.size(0)
+
+
+class SignalDataset(data.Dataset):
+    """
+    A signals-only version of SeqTensorDataset, to be used for basecalling.
+
+    Constructor arguments:
+    * sig_idx_tensor: of shape (num_examples, 2). The start/stop indices for each signal.
+    * signal_tensor: of shape (total_samples, [signal_dim]).
+    
+    In the above, `total_samples` is equal to the sum of the lengths of all the signals.
+    We enforce a condition that fetched signals must be of shape (signal_length, D) where D may be == 1.
+    If the input signal tensor is a 1D sequence of shape (total_samples,), we unsqueeze the final dimension.
+
+    `__getitem__` returns `_signal` ~FloatTensor of size (signal_length, max{1,signal_dim}).
+    """
+    def __init__(self, sig_idx_tensor, signal_tensor):
+        unsqueeze = (len(signal_tensor.size()) == 1) # bool indicating whether to unsqueeze
+        # save tensors as object fields:
+        self.sig_indices = sig_idx_tensor
+        self.signals = signal_tensor if not unsqueeze else signal_tensor.unsqueeze(-1)
+
+    def __getitem__(self, index):
+        # get signal:
+        sig_start, sig_stop = self.sig_indices[index]
+        _signal = self.signals[sig_start:sig_stop]
+        return _signal
+
+    def __len__(self):
+        return self.sig_indices.size(0)
 
 
 def pad_sequence(sequences, batch_first=False, pad_value=0):
