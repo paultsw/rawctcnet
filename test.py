@@ -17,6 +17,7 @@ from models.raw_ctcnet import RawCTCNet
 from modules.sequence_decoders import argmax_decode, labels2strings
 from utils.data import SeqTensorDataset, sequence_collate_fn, concat_labels, mask_padding
 from utils.parser import parse_dataset_paths
+from utils.align import ssw
 # etc:
 from tqdm import tqdm
 import numpy as np
@@ -120,7 +121,11 @@ def main(cfg, cuda=torch.cuda.is_available()):
                 tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])
                 tqdm.write("Beam Seq: {0}".format(pred_nts[i]), file=cfg['logfile'])
                 tqdm.write("Amax Seq: {0}".format(amax_nts[i]), file=cfg['logfile'])
-                tqdm.write("- " * 40, file=cfg['logfile'])
+                tqdm.write(("- " * 10 + "Local Beam Alignment" + " -" * 10), file=cfg['logfile'])
+                aln, alnscore = ssw(true_nts[i], pred_nts[i])
+                tqdm.write("Alignment Score: {0}".format(alnscore), file=cfg['logfile'])
+                tqdm.write(aln, file=cfg['logfile'])
+                tqdm.write("= " * 40, file=cfg['logfile'])
 
     # (Currently don't do anything at end of epoch.)
     def on_end(state):
