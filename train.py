@@ -262,9 +262,7 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
                 tqdm.write("Beam Seq: {0}".format(pred_nts[i]), file=cfg['logfile'])
                 tqdm.write("Amax Seq: {0}".format(amax_nts[i]), file=cfg['logfile'])
                 tqdm.write(("- " * 10 + "Local Beam Alignment" + " -" * 10), file=cfg['logfile'])
-                aln, alnscore = ssw(true_nts[i], pred_nts[i])
-                tqdm.write("Alignment Score: {0}".format(alnscore), file=cfg['logfile'])
-                tqdm.write(aln, file=cfg['logfile'])
+                tqdm.write(ssw(true_nts[i], pred_nts[i]), file=cfg['logfile'])
                 tqdm.write("= " * 40, file=cfg['logfile'])
 
         # save model:
