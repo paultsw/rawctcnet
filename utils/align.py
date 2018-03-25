@@ -32,12 +32,19 @@ def ssw(seq1, seq2):
     Returns: a tuple (aln, score, pct_id) where:
     * aln_str: a printable output representing alignments, with a middle line containing {|, . } characters.
     """
-    aln_data = pairwise2.align.localdd(seq1, seq2, #  sequences A and B
-                                       _DNAFULL_, # use scoring matrix as above
-                                       -10.0, -0.5, # sequence A gap-open and gap-extend penalties
-                                       -10.0, -0.5, # sequence B gap-open and gap-extend penalties
-                                       one_alignment_only=True)[0] # only return best alignment
-    aln_str = format_alignment(*aln_data)
+    # remove whitespace:
+    s1 = ''.join(seq1.split())
+    s2 = ''.join(seq2.split())
+
+    try:
+        aln_data = pairwise2.align.localdd(s1, s2, #  sequences A and B
+                                           _DNAFULL_, # use scoring matrix as above
+                                           -10.0, -0.5, # sequence A gap-open and gap-extend penalties
+                                           -10.0, -0.5, # sequence B gap-open and gap-extend penalties
+                                           one_alignment_only=True)[0] # only return best alignment
+        aln_str = format_alignment(*aln_data)
+    except:
+        aln_str = "(ERR: could not generate local alignment; skipping...)"
     return aln_str
 
 
