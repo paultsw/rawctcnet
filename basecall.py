@@ -39,8 +39,11 @@ def main(cfg, cuda=torch.cuda.is_available()):
         pin_mem = cuda
         nworkers = cfg['num_workers']
         
-        # (possibly) concatenate datasets together:
-        ds = SignalDataset(torch.load(datasets[0]), torch.load(datasets[1]))
+        # construct signal dataset:
+        if cfg['dtype'] == 'npy':
+            ds = SignalDataset(torch.from_numpy(np.load(datasets[0])).int(), torch.from_numpy(np.load(datasets[1])).float())
+        else:
+            ds = SignalDataset(torch.load(datasets[0]), torch.load(datasets[1]))
         
         # return a dataloader iterating over datasets; pagelock memory location if GPU detected:
         return DataLoader(ds, batch_size=1, shuffle=False,
@@ -127,6 +130,8 @@ def main(cfg, cuda=torch.cuda.is_available()):
 if __name__ == '__main__':
     # ingest command line arguments:
     parser = argparse.ArgumentParser(description="Run RawCTCNet on a validation dataset.")
+    parser.add_argument("--dtype", dest="dtype", choices=('pth','npy'), default='pth',
+                        help="Datatype of input tensors; either PyTorch or NumPy. [pth]")
     parser.add_argument("--workers", dest='workers', default=1, type=int,
                         help="Number of processes for dataloading/decoding. [1]")
     parser.add_argument("--model", dest='model', default=None,
@@ -146,6 +151,7 @@ if __name__ == '__main__':
         print("ERR: signals data does not exist! Check `--dataset` argument", file=sys.stderr)
         raise(e)
     cfg = { 
+        'dtype': args.dtype,
         'num_workers': args.workers,
         'model': args.model,
         'decoder': args.decoder,

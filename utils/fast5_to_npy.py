@@ -1,8 +1,7 @@
 """
-Convert a fast5 file to (med-mad normalized) torch signal indices/data.
+Convert a fast5 file to (med-mad normalized) numpy signal indices/data.
 """
 import fast5
-import torch
 import numpy as np
 import argparse
 import os
@@ -22,7 +21,7 @@ def medmad_scale(arr):
     return arr_medmad
 
 
-def fast5_to_torch(fast5_glob, out_dir, prefix):
+def fast5_to_numpy(fast5_glob, out_dir, prefix):
     """
     Read a fast5 file and extract signal; output <PREFIX>.idxs.pth, <PREFIX>.data.pth
     inside `out_dir`.
@@ -48,10 +47,10 @@ def fast5_to_torch(fast5_glob, out_dir, prefix):
         except:
             raise IOError("No samples found in fast5 file")
 
-    # write to torch tensors:
+    # write to numpy tensors:
     concat_signals = np.concatenate(signals, axis=0)
-    torch.save(torch.from_numpy(concat_signals).float(), os.path.join(out_dir,"{}.data.pth".format(prefix)))
-    torch.save(torch.IntTensor(lengths), os.path.join(out_dir,"{}.idxs.pth".format(prefix)))
+    np.save(concat_signals, os.path.join(out_dir,"{}.data.npy".format(prefix)))
+    np.save(np.array(lengths, dtype=int), os.path.join(out_dir,"{}.idxs.npy".format(prefix)))
 
 
 if __name__ == '__main__':
@@ -60,4 +59,4 @@ if __name__ == '__main__':
     parser.add_argument("--dir", dest="out_dir", default="./", help="Output directory [pwd]")
     parser.add_argument("--prefix", dest="prefix", default="signals", help="Output filename prefix [signals]")
     args = parser.parse_args()
-    fast5_to_torch(args.fast5_glob, args.out_dir, args.prefix)
+    fast5_to_numpy(args.fast5_glob, args.out_dir, args.prefix)
