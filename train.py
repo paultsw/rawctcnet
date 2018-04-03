@@ -8,6 +8,7 @@ from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
 import torchnet as tnt
 from utils.engine import Engine
@@ -188,8 +189,9 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
     model_loss = async_model_loss if cfg['async'] else batch_model_loss
     model_eval = async_model_eval if cfg['async'] else batch_model_eval
 
-    ### build optimizer:
+    ### build optimizer and LR scheduler:
     opt = optim.Adamax(network.parameters(), lr=cfg['lr'])
+    sched = ReduceLROnPlateau(opt, mode='min', patience=5)
     print("Constructed Adamax optimizer.")
 
     ### build beam search decoder:
@@ -247,6 +249,9 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
         # log to both logfile and stdout:
         tqdm.write("EPOCH {0} | Avg. Val Loss: {1}".format(state['epoch'], avg_val_loss), file=cfg['logfile'])
         print("EPOCH {0} | Avg. Val Loss: {1}".format(state['epoch'], avg_val_loss))
+
+        # send average val. loss to learning rate scheduler:
+        sched.step(avg_val_loss)
         
         # beam search decoding:
         _nt_dict_ = { 0: ' ', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
