@@ -197,7 +197,7 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
     else:
         raise Exception("Optimizer not recognized!")
     sched = ReduceLROnPlateau(opt, mode='min', patience=5)
-    print("Constructed Adamax optimizer.")
+    print("Constructed {} optimizer.".format(cfg['optim']))
 
     ### build beam search decoder:
     beam_labels = [' ', 'A', 'G', 'C', 'T']
