@@ -190,7 +190,12 @@ def main(cfg, cuda_avail=torch.cuda.is_available()):
     model_eval = async_model_eval if cfg['async'] else batch_model_eval
 
     ### build optimizer and LR scheduler:
-    opt = optim.Adamax(network.parameters(), lr=cfg['lr'])
+    if (cfg['optim'] == 'adamax'):
+        opt = optim.Adamax(network.parameters(), lr=cfg['lr'])
+    elif (cfg['optim'] == 'adam'):
+        opt = optim.Adam(network.parameters(), lr=cfg['lr'])
+    else:
+        raise Exception("Optimizer not recognized!")
     sched = ReduceLROnPlateau(opt, mode='min', patience=5)
     print("Constructed Adamax optimizer.")
 
@@ -316,6 +321,8 @@ if __name__ == '__main__':
                         help="File to log progress and validation results. [STDOUT]")
     parser.add_argument("--model", dest="model", default=None,
                         help="Continue training from a previously-saved model [None]")
+    parser.add_argument("--optim", dest="optim", choices=('adam', 'adamax'), default='adamax',
+                        help="Choice of optimizer: either 'adam' or 'adamax' [adamax]")
     parser.add_argument("--cuda", dest="cuda", choices=('on','off'), default='on',
                         help="Use CUDA if available; does nothing on CPU-only. [on]")
     parser.add_argument('--train_data', required=True, dest='train_data', type=str,
@@ -344,6 +351,7 @@ if __name__ == '__main__':
         'save_dir': args.save_dir,
         'logfile': log_fp,
         'model': args.model,
+        'optim': args.optim,
         'cuda': (True if (args.cuda == 'on') else False),
         'train_data_paths': train_datasets,
         'valid_data_paths': valid_datasets
