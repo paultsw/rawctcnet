@@ -40,7 +40,7 @@ def fast5_to_numpy(fast5_glob, out_dir, prefix):
     ctr = 0
     for f5file in glob(fast5_glob):
         try:
-            signal = medmad_scale(np.array([sample for sample in f5file.get_raw_samples()], dtype=np.float32))
+            signal = medmad_scale(np.array([sample for sample in fast5.File(f5file).get_raw_samples()], dtype=np.float32))
             signals.append(signal)
             lengths.append([ctr, ctr+signal.shape[0]])
             ctr += signal.shape[0]
