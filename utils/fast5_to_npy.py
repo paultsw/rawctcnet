@@ -49,8 +49,8 @@ def fast5_to_numpy(fast5_glob, out_dir, prefix):
 
     # write to numpy tensors:
     concat_signals = np.concatenate(signals, axis=0)
-    np.save(concat_signals, os.path.join(out_dir,"{}.data.npy".format(prefix)))
-    np.save(np.array(lengths, dtype=int), os.path.join(out_dir,"{}.idxs.npy".format(prefix)))
+    np.save(os.path.join(out_dir,"{}.data.npy".format(prefix)), concat_signals)
+    np.save(os.path.join(out_dir,"{}.idxs.npy".format(prefix)), np.array(lengths, dtype=int))
 
 
 if __name__ == '__main__':
