@@ -97,27 +97,38 @@ def main(cfg, cuda=torch.cuda.is_available()):
     def on_sample(state):
         pass
 
-    # occasionally log the loss value and perform beam search decoding:
+    # decode outputs:
     def on_forward(state):
         logits = F.softmax(state['output'].permute(1,0,2), dim=2)
+        # ctc-beam decoding: return best hypothesis
         if (cfg['decoder'] == 'beam'):
-            # ctc-beam decoding: return best hypothesis
             _nt_dict_ = {0: ' ', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
-            convert_to_string = lambda toks,voc,num : ''.join([ voc[t] for t in toks[0:num] ])
-            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
-            pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
-            print(pred_nts[0])
+            def convert_to_string(toks, voc, num):
+                try:
+                    nt = ''.join([ voc[t] for t in toks[0:num] ])
+                except:
+                    nt = ''
+                return nt
+            try:
+                beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
+                pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
+                print(pred_nts[0])
+            except:
+                print("(WARN: Could not parse batch; skipping...)")
+        # arg-max decoding:
         else:
-            # arg-max decoding:
-            _nt_dict_ = {0: '', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
-            amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
-            print(amax_nts[0])
+            try:
+                _nt_dict_ = {0: '', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
+                amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
+                print(amax_nts[0])
+            except:
+                print("(WARN: Could not parse batch; skipping...)")
 
     # (Currently don't do anything at end of epoch.)
     def on_end(state):
         pass
 
-    print("Constructed engine. Running validation loop...", file=sys.stderr)
+    print("Constructed engine. Running basecaller loop...", file=sys.stderr)
 
     ### run validation loop:
     engine.hooks['on_start'] = on_start

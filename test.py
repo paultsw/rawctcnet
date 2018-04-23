@@ -112,18 +112,27 @@ def main(cfg, cuda=torch.cuda.is_available()):
             scores = mask_padding(state['output'].permute(1,0,2), logit_lengths_t, fill_logit_idx=0)
             logits = F.softmax(scores, dim=2)
             _nt_dict_ = {0: ' ', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
-            convert_to_string = lambda toks,voc,num : ''.join([ voc[t] for t in toks[0:num] ])
-            true_nts = labels2strings(seq_t, lookup=_nt_dict_)
-            amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
-            beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
-            pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ] #[???]
-            for i in range(min(len(true_nts), len(pred_nts))):
-                tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])
-                tqdm.write("Beam Seq: {0}".format(pred_nts[i]), file=cfg['logfile'])
-                tqdm.write("Amax Seq: {0}".format(amax_nts[i]), file=cfg['logfile'])
-                tqdm.write(("- " * 10 + "Local Beam Alignment" + " -" * 10), file=cfg['logfile'])
-                tqdm.write(ssw(true_nts[i], pred_nts[i]), file=cfg['logfile'])
-                tqdm.write("= " * 40, file=cfg['logfile'])
+            def convert_to_string(toks, voc, num):
+                try:
+                    nt = ''.join([ voc[t] for t in toks[0:num] ])
+                except:
+                    nt = ''
+                return nt
+            try:
+                true_nts = labels2strings(seq_t, lookup=_nt_dict_)
+                amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
+                beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
+                pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
+                for i in range(min(len(true_nts), len(pred_nts))):
+                    tqdm.write("True Seq: {0}".format(true_nts[i]), file=cfg['logfile'])
+                    tqdm.write("Beam Seq: {0}".format(pred_nts[i]), file=cfg['logfile'])
+                    tqdm.write("Amax Seq: {0}".format(amax_nts[i]), file=cfg['logfile'])
+                    tqdm.write(("- " * 10 + "Local Beam Alignment" + " -" * 10), file=cfg['logfile'])
+                    tqdm.write(ssw(true_nts[i], pred_nts[i]), file=cfg['logfile'])
+                    tqdm.write("= " * 40, file=cfg['logfile'])
+            except:
+                tqdm.write("(WARN: Could not parse batch; skipping...)", file=cfg['logfile'])
+                
 
     # (Currently don't do anything at end of epoch.)
     def on_end(state):
