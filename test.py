@@ -51,7 +51,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
 
     ### build RawCTCNet model:
     in_dim = 1
-    layers = [ (256,256,d,3) for d in [1,2,4,8,16,32,64] ] * 3
+    layers = [ (256,256,d,3) for d in [1,2,4,8,16,32,64] ] * cfg['num_stacks']
     num_labels = 5
     out_dim = 512
     network = RawCTCNet(in_dim, num_labels, layers, out_dim, input_kw=1, input_dil=1,
@@ -161,6 +161,8 @@ if __name__ == '__main__':
                         help="Number of processes for dataloading/decoding. [1]")
     parser.add_argument("--model", dest='model', default=None,
                         help="Path to saved model file. [None/Random initialization]")
+    parser.add_argument("--num_stacks", dest='num_stacks', default=3, type=int,
+                        help="Number of stacks in the model. [3]")
     parser.add_argument("--dataset", dest='dataset', required=True, type=str,
                         help="Path(s) to validation datasets, in comma-semicolon format.")
     args = parser.parse_args()
@@ -174,6 +176,7 @@ if __name__ == '__main__':
         'logfile': log_fp,
         'num_workers': args.workers,
         'model': args.model,
+        'num_stacks': args.num_stacks,
         'data_paths': datasets
     }
     try:
