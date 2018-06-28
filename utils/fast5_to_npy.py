@@ -38,7 +38,7 @@ def fast5_to_numpy(fast5_glob, out_dir, prefix):
     signals = []
     lengths = []
     ctr = 0
-    for f5file in glob(fast5_glob):
+    for f5file in tqdm(glob(fast5_glob)):
         try:
             signal = medmad_scale(np.array([sample for sample in fast5.File(f5file).get_raw_samples()], dtype=np.float32))
             signals.append(signal)
