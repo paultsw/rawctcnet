@@ -70,7 +70,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
     
     ### build basecaller function:
     maybe_gpu = lambda tsr, has_cuda: tsr if not has_cuda else tsr.cuda()
-    batchify = BatchSignalTransform(max_length=2000)
+    batchify = BatchSignalTransform(max_length=cfg['batchify_length'], max_batch_size=cfg['batchify_size'])
     def basecall(sample):
         # compute predicted labels; the permutes perform `BxTxD => BxDxT => TxBxD`
         return (0.0, network(Variable(maybe_gpu(batchify(sample).permute(0,2,1), cuda), volatile=True)).permute(2,0,1))
@@ -150,6 +150,11 @@ if __name__ == '__main__':
                         help="Type of output decoder to use (CTC-Beam or ArgMax) [beam]")
     parser.add_argument("--dataset", dest='dataset', required=True, type=str,
                         help="Path(s) to comma-separated signal dataset.")
+    parser.add_argument("--batchify_length", dest="batchify_length", default=2000,
+                        help="Max sequence length in our procrustean batchify transform. [2000]")
+    parser.add_argument("--batchify_size", dest="batchify_size", default=24,
+                        help="Max batch size in our procrustean batchify transform. [24]")
+    parser.add_argument()
     args = parser.parse_args()
     # parse arguments and run sanity checks:
     try:
@@ -166,7 +171,9 @@ if __name__ == '__main__':
         'model': args.model,
         'num_stacks': args.num_stacks,
         'decoder': args.decoder,
-        'data_paths': datasets
+        'data_paths': datasets,
+        'batchify_length': args.batchify_length,
+        'batchify_size': args.batchify_size
     }
     try:
         main(cfg)
