@@ -11,7 +11,6 @@ from torch.utils.data import DataLoader
 import torchnet as tnt
 from torchnet.engine import Engine
 # ctc libs:
-from warpctc_pytorch import CTCLoss
 from ctcdecode import CTCBeamDecoder
 # custom models/datasets:
 from models.raw_ctcnet import RawCTCNet
@@ -73,11 +72,8 @@ def main(cfg, cuda=torch.cuda.is_available()):
     maybe_gpu = lambda tsr, has_cuda: tsr if not has_cuda else tsr.cuda()
     batchify = BatchSignalTransform(max_length=2000)
     def basecall(sample):
-        # unpack input sample and wrap in a Variable:
-        signals = Variable(maybe_gpu(batchify(sample).permute(0,2,1), cuda), volatile=True) # BxTxD => BxDxT
-        # compute predicted labels:
-        transcriptions = network(signals).permute(2,0,1) # Permute: BxDxT => TxBxD
-        return (0.0, transcriptions)
+        # compute predicted labels; the permutes perform `BxTxD => BxDxT => TxBxD`
+        return (0.0, network(Variable(maybe_gpu(batchify(sample).permute(0,2,1), cuda), volatile=True)).permute(2,0,1))
 
     ### build beam search decoder:
     if (cfg['decoder'] == 'beam'):

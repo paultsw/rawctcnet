@@ -87,9 +87,10 @@ class BatchSignalTransform(object):
     """
     Given a sequential signal tensor (**not** a Variable), split into a batch.
     """
-    def __init__(self, max_length=2000, overlap=0, drop_remainder=True):
+    def __init__(self, max_length=2000, overlap=0, max_batch_size=16, drop_remainder=True):
         """Save input arguments."""
         self.max_length = max_length
+        self.max_batch_size = max_batch_size
         assert (overlap == 0), "[BatchSignalTransform] overlap != 0 currently unsupported"
         assert drop_remainder, "[BatchSignalTransform] padding/saving remainder data currently unsupported"
 
@@ -104,11 +105,11 @@ class BatchSignalTransform(object):
 
         # compute number of examples in the batch:
         bsz = signal.size(0) // self.max_length
+        bsz = min(bsz, self.max_batch_size) # (clamp to max value)
         remaining = (signal.size(0) % self.max_length > 0)
 
-        # collate into batches:
-        batched_signal = [signal[(k*self.max_length):((k+1)*self.max_length)] for k in range(bsz)]
-        return torch.stack(batched_signal, dim=0)
+        # reshape into a batch:
+        return signal[0:self.max_length*bsz].view(bsz, self.max_length, signal.size(1))
 
 
 def pad_sequence(sequences, batch_first=False, pad_value=0):
