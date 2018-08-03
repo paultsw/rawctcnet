@@ -154,7 +154,6 @@ if __name__ == '__main__':
                         help="Max sequence length in our procrustean batchify transform. [2000]")
     parser.add_argument("--batchify_size", dest="batchify_size", default=24,
                         help="Max batch size in our procrustean batchify transform. [24]")
-    parser.add_argument()
     args = parser.parse_args()
     # parse arguments and run sanity checks:
     try:
