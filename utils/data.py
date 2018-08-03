@@ -77,11 +77,38 @@ class SignalDataset(data.Dataset):
     def __getitem__(self, index):
         # get signal:
         sig_start, sig_stop = self.sig_indices[index]
-        _signal = self.signals[sig_start:sig_stop]
-        return _signal
+        return self.signals[sig_start:sig_stop]
 
     def __len__(self):
         return self.sig_indices.size(0)
+
+
+class BatchSignalTransform(object):
+    """
+    Given a sequential signal tensor (**not** a Variable), split into a batch.
+    """
+    def __init__(self, max_length=2000, overlap=0, drop_remainder=True):
+        """Save input arguments."""
+        self.max_length = max_length
+        assert (overlap == 0), "[BatchSignalTransform] overlap != 0 currently unsupported"
+        assert drop_remainder, "[BatchSignalTransform] padding/saving remainder data currently unsupported"
+
+    def __call__(self, signal):
+        """Split a signal ~ (signal_length, dim) into a batch ~ (batch_size, min{max_length, len(signal)}, dim)."""
+        # squeeze out batch dimension:
+        signal = signal.squeeze(0) if (len(signal.size()) == 3) else signal
+
+        # if we don't hit max length, just return a batch of size 1:
+        if signal.size(0) < self.max_length:
+            return signal.unsqueeze(0)
+
+        # compute number of examples in the batch:
+        bsz = signal.size(0) // self.max_length
+        remaining = (signal.size(0) % self.max_length > 0)
+
+        # collate into batches:
+        batched_signal = [signal[(k*self.max_length):((k+1)*self.max_length)] for k in range(bsz)]
+        return torch.stack(batched_signal, dim=0)
 
 
 def pad_sequence(sequences, batch_first=False, pad_value=0):

@@ -16,7 +16,7 @@ from ctcdecode import CTCBeamDecoder
 # custom models/datasets:
 from models.raw_ctcnet import RawCTCNet
 from modules.sequence_decoders import argmax_decode, labels2strings
-from utils.data import SignalDataset, concat_labels, mask_padding
+from utils.data import SignalDataset, concat_labels, mask_padding, BatchSignalTransform
 # etc:
 from tqdm import tqdm
 import numpy as np
@@ -71,9 +71,10 @@ def main(cfg, cuda=torch.cuda.is_available()):
     
     ### build basecaller function:
     maybe_gpu = lambda tsr, has_cuda: tsr if not has_cuda else tsr.cuda()
+    batchify = BatchSignalTransform(max_length=2000)
     def basecall(sample):
         # unpack input sample and wrap in a Variable:
-        signals = Variable(maybe_gpu(sample.permute(0,2,1), cuda), volatile=True) # BxTxD => BxDxT
+        signals = Variable(maybe_gpu(batchify(sample).permute(0,2,1), cuda), volatile=True) # BxTxD => BxDxT
         # compute predicted labels:
         transcriptions = network(signals).permute(2,0,1) # Permute: BxDxT => TxBxD
         return (0.0, transcriptions)
@@ -112,7 +113,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
             try:
                 beam_result, beam_scores, beam_times, beam_lengths = beam_decoder.decode(logits.data)
                 pred_nts = [ convert_to_string(beam_result[k][0], _nt_dict_, beam_lengths[k][0]) for k in range(len(beam_result)) ]
-                print(pred_nts[0])
+                print("".join(pred_nts))
             except:
                 print("(WARN: Could not parse batch; skipping...)")
         # arg-max decoding:
@@ -120,7 +121,7 @@ def main(cfg, cuda=torch.cuda.is_available()):
             try:
                 _nt_dict_ = {0: '', 1: 'A', 2: 'G', 3: 'C', 4: 'T' }
                 amax_nts = labels2strings(argmax_decode(logits), lookup=_nt_dict_)
-                print(amax_nts[0])
+                print("".join(amax_nts))
             except:
                 print("(WARN: Could not parse batch; skipping...)")
 
